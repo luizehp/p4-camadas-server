@@ -11,6 +11,7 @@
 
 
 from enlace import *
+from funcao import *
 import time
 import numpy as np
 
@@ -30,85 +31,27 @@ def main():
         print("Iniciou o main")
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        com1 = enlace(serialName)
+        
+        server = Server(serialName,1)
 
-        imageW = "img/recebidaCopia.jpg"
-    
-        # Ativa comunicacao. Inicia os threads e a comunicação seiral 
-        com1.enable()
-        #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-
-        print("esperando 1 byte de sacrifício")
-        rxBuffer, nRx = com1.getData(1)
-        com1.rx.clearBuffer()
-        time.sleep(.05)
-        print("enviando 1 byte de sacrifício")
-        com1.sendData(np.asarray(b'x00'))    #enviar byte de lixo
-        print('enviou bytte sacrificio')
-        time.sleep(.05)
-        print("*******Início handshake*******")
-        rxBuffer, nRx = com1.getData(15)
-        print(rxBuffer)
-        time.sleep(.05)
-        print('Comçando transmissão de dados:')
-    
-        com1.sendData(np.asarray(rxBuffer))    #enviar byte de lixo
-        time.sleep(.05)
-        print("*******Final handshake*******")
-        indice=0
-        payloads=b""
         erro=False
         while True:
-            com1.rx.clearBuffer()
-            int_list = [int(byte) for byte in rxBuffer]
-            tamanho=int_list[2]
-            print(tamanho, "____________________" ,int_list[1])
-            print(f"indices: {indice}", int_list[0], int_list[1])
-            if int_list[0]==int_list[1]:
-                print("=============TERMINOU=============")
-                break
-
-
+            msg=b""
             print("esperando pacote")
-            raBuffer=rxBuffer
-            rxBuffer, nRx = com1.getData(tamanho)
-            recebe_int = [int(byte) for byte in rxBuffer]
-            payloads+=rxBuffer[12:-3]
-            #print("AAAAAAAAAAAAAAAA",payloads)
-            print("AAAAAAAAAAAAAAAA",len(recebe_int),int_list[2])
-
-            
-            if indice!=int_list[0]:
-                print("----PACOTE FORA DE ORDEM----")
-                erro=True
-                break
-            if int_list[-3:]!=[255,255,255]:
-                print("****ERRO EOP****")
-                erro=True
-                break
-            if len(recebe_int)!=recebe_int[3]:
-                print("====ERRO TAMANHO====")
-                erro=True
-                break
-
-            if erro:
-                rxBuffer=raBuffer
-                erro=False
-            else:
-                indice+=1
-
-
-            time.sleep(0.05)
-            print("#################")
-            print(rxBuffer[0:12]+rxBuffer[-3:])
-            print("#################")
-            com1.sendData(rxBuffer[0:12]+rxBuffer[-3:])
-            print("")
+            rxBuffer, nRx = server.getdata(10)
             print(rxBuffer)
-            print("")
-        f = open(imageW,'wb')
-        f.write(payloads)
-        f.close
+            msg+=rxBuffer
+            int_list = [int(byte) for byte in rxBuffer]
+            tamanho=int_list[5]
+            rxBuffer, nRx = server.getdata(tamanho)
+            msg+=rxBuffer
+            rxBuffer, nRx = server.getdata(4)
+            msg+=rxBuffer
+            resposta=server.recebeDatagrama(msg,1)
+            time.sleep(0.05)
+            server.sendata(resposta)
+
+
         
 
 
@@ -121,7 +64,6 @@ def main():
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
-        com1.disable()
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":

@@ -29,6 +29,13 @@ class enlace(object):
         self.fisica.open()
         self.rx.threadStart()
         self.tx.threadStart()
+    
+    def getData_teste(self, size):
+        data, check = self.rx.getNData_test(size)
+        if check:
+            return(data, len(data), check)
+        else:
+            return(None,None,check)
 
     def disable(self):
         self.rx.threadKill()
