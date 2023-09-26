@@ -3,7 +3,7 @@ from enlace import *
 import numpy as np
 import time
 
-class Server:
+""" class Server:
 
     def __init__(self, porta: str, id:int) -> None:
         self.porta= porta
@@ -11,54 +11,52 @@ class Server:
         self.qnt_payloads=0
         self.n=0
 
-        try:
+        """ """ try:
             self.com = enlace(self.porta)
             self.com.enable()
-            self.enviaByteSacrificio()
+            #self.recebeByteSacrificio()
             #self.enviaByteSacrificio()
         except Exception as erro:
             print("ops! :-\\")
             print(erro)
-            self.com.disable()
+            self.com.disable() """ """ """
         
 
 
 
-    def recebeDatagrama(self, msg: bytearray, id_arquivo:int):
-        int_list = [int(byte) for byte in msg]
-        head = int_list[0:10]
-        payload = int_list[10:125]
-        eop = int_list[-4:]
-        recebeu=False
-        rsp=b""
-        if head[0] == 1 and head[1] == self.id and head[5]==id_arquivo and self.n==0:
-            rsp=[0]*10
-            rsp[0]=2
-            resp=bytes(resp)
-            resp+=b'\xAA\xBB\xCC\xDD'
-            self.qnt_payloads=head[3]
-            recebeu=True
-        elif head[0]==3 :
-            if eop == [170,187,204,221]:
-                if head[3]==self.qnt_payloads:
-                    if self.n==head[4]:
-                        if head[5]==len(payload):
-                            rsp=[0]*10
-                            rsp[0]=4
-                            rsp[7]=self.n
-                            resp=bytes(resp)
-                            resp+=b'\xAA\xBB\xCC\xDD'
-                            recebeu=True                  
-        if recebeu==True:
-            self.n+=1
-            recebeu=False
-        return rsp
+def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int):
+    int_list = [int(byte) for byte in msg]
+    head = int_list[0:10]
+    payload = int_list[10:125]
+    eop = int_list[-4:]
+    recebeu=False
+    rsp=b""
+    if head[0] == 1 and head[1] == id and head[5]==id_arquivo and n==0:
+        print("*******Início handshake*******")
+        rsp=[0]*10
+        rsp[0]=2
+        resp=bytes(resp)
+        resp+=b'\xAA\xBB\xCC\xDD'
+        qnt_payloads=head[3]
+        recebeu=True
+    elif head[0]==3 :
+        if eop == [170,187,204,221]:
+            if head[3]==qnt_payloads:
+                if n==head[4]:
+                    if head[5]==len(payload):
+                        rsp=[0]*10
+                        rsp[0]=4
+                        rsp[7]=n
+                        resp=bytes(resp)
+                        resp+=b'\xAA\xBB\xCC\xDD'   
+                        recebeu=True              
+    return rsp,recebeu
 
 
             
        
 
-    def enviaByteSacrificio(self) -> None:
+    """ def enviaByteSacrificio(self) -> None:
         print('Enviando byte de sacrificio')
         self.com.sendData(np.asarray(b'x00'))    #enviar byte de lixo
         time.sleep(.05)
@@ -68,17 +66,17 @@ class Server:
     def recebeByteSacrificio(self) -> None:
         print("Esperando byte de sacrifício")
         rxBuffer, nRx = self.com.getData(1)
-        time.sleep(.05)
-        self.com.rx.clearBuffer()
         print("RECEBEU")
+        time.sleep(.05)
+        self.com.rx.clearBuffer() """
 
-    def clearbuffer(self):
+    """ def clearbuffer(self):
         self.com.rx.clearBuffer()
     def sendata(self,array):
         self.com.sendData(array)
     def getdata(self,tamanho):
         rxBuffer, nRx=self.com.getData(tamanho)
-        return rxBuffer, nRx
+        return rxBuffer, nRx """
 
    # def enviaDatagrama(self, id_arquivo: int):
         

@@ -31,25 +31,53 @@ def main():
         print("Iniciou o main")
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        
-        server = Server(serialName,1)
+        com1 = enlace(serialName)
+    
+        # Ativa comunicacao. Inicia os threads e a comunicação seiral 
+        com1.enable()
+        #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
 
+        print("esperando 1 byte de sacrifício")
+        rxBuffer, nRx = com1.getData(1)
+        print("RECEBEU")
+        
+        com1.rx.clearBuffer()
+        time.sleep(.05)
+        
+
+        #server = Server(serialName,1)
+        
         erro=False
+        n=1
         while True:
             msg=b""
             print("esperando pacote")
-            rxBuffer, nRx = server.getdata(10)
+            rxBuffer, nRx = com1.getData(10)
+            time.sleep(.05)
+            print("=========HEAD=========")
             print(rxBuffer)
             msg+=rxBuffer
             int_list = [int(byte) for byte in rxBuffer]
+
             tamanho=int_list[5]
-            rxBuffer, nRx = server.getdata(tamanho)
+            if int_list[0]!=1:
+                rxBuffer, nRx = com1.getData(tamanho)
+                time.sleep(.05)
+                print("=========PAYLOAD=========")
+                print(rxBuffer)
+                msg+=rxBuffer
+            rxBuffer, nRx = com1.getData(4)
+            time.sleep(.05)
+            print("=========EOP=========")
+            print(rxBuffer)
             msg+=rxBuffer
-            rxBuffer, nRx = server.getdata(4)
-            msg+=rxBuffer
-            resposta=server.recebeDatagrama(msg,1)
-            time.sleep(0.05)
-            server.sendata(resposta)
+            resposta,recebeu=recebeDatagrama(msg,1,1,n,int_list[3])
+            if recebeu:
+                n+=1
+            print("+++++ENVIA+++++")
+            print(resposta)
+            com1.sendData(resposta)
+            time.sleep(.05)
 
 
         
