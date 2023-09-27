@@ -1,4 +1,3 @@
-from funcao import *
 from enlace import *
 import numpy as np
 import time
@@ -24,7 +23,7 @@ import time
 
 
 
-def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int):
+""" def recebeDatagramaa( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int):
     int_list = [int(byte) for byte in msg]
     head = int_list[0:10]
     payload = int_list[10:125]
@@ -50,7 +49,56 @@ def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads
                         resp=bytes(resp)
                         resp+=b'\xAA\xBB\xCC\xDD'   
                         recebeu=True              
-    return rsp,recebeu
+    return rsp,recebeu """
+
+
+def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int, timeout):
+    resp=b""
+
+    if timeout:
+        resp=[0]*10
+        resp[0]=4
+        resp=bytes(resp)
+        resp+=b'\xAA\xBB\xCC\xDD'
+        return resp
+
+    int_list = [int(byte) for byte in msg]
+    head = int_list[0:10]
+    #payload = int_list[10:125]
+    eop = int_list[-4:]
+    ocioso=True
+    recebeu=False
+    erro=False
+
+    if head[0] == 1 and head[1] == id and head[5]==id_arquivo and n==1:
+        print("*******Início handshake*******")
+        resp=[0]*10
+        resp[0]=2
+        resp=bytes(resp)
+        resp+=b'\xAA\xBB\xCC\xDD'
+        qnt_payloads=head[3]
+        ocioso=False
+        return resp,ocioso,recebeu,erro
+
+    if (head[0]!=3) or (eop != [170,187,204,221]) or (head[3]!=qnt_payloads) or (n!=head[4]):
+        print("PACOTE ERRO")
+        resp=[0]*10
+        resp[0]=6
+        resp[6]=n
+        resp=bytes(resp)
+        resp+=b'\xAA\xBB\xCC\xDD'   
+        recebeu=True 
+        erro=True
+    else:
+        print("PACOTE OK")
+        resp=[0]*10
+        resp[0]=4
+        resp[7]=n
+        resp=bytes(resp)
+        resp+=b'\xAA\xBB\xCC\xDD'   
+        recebeu=True  
+    
+    return resp,ocioso,recebeu,erro
 
 
             

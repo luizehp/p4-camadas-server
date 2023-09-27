@@ -49,35 +49,86 @@ def main():
         
         erro=False
         n=1
+        ocioso=True
+        int_list=[0]*12
+        timer1=time.time()
+        timer2=time.time()
+        recebeu=False
         while True:
             msg=b""
             print("esperando pacote")
-            rxBuffer, nRx = com1.getData(10)
-            time.sleep(.05)
-            print("=========HEAD=========")
-            print(rxBuffer)
-            msg+=rxBuffer
-            int_list = [int(byte) for byte in rxBuffer]
+            print(f"n={n}")
+            if ocioso:
+                if com1.rx.getBufferLen()>10:
+                    print()
+                    print("BUFFER",com1.rx.getBufferLen())
+                    rxBuffer, nRx = com1.getData(10)
+                    time.sleep(.05)
+                    print("=========HEAD=========")
+                    print(rxBuffer)
+                    msg+=rxBuffer
+                    int_list = [int(byte) for byte in rxBuffer]
 
-            tamanho=int_list[5]
-            if int_list[0]!=1:
-                rxBuffer, nRx = com1.getData(tamanho)
-                time.sleep(.05)
-                print("=========PAYLOAD=========")
-                print(rxBuffer)
-                msg+=rxBuffer
-            rxBuffer, nRx = com1.getData(4)
-            time.sleep(.05)
-            print("=========EOP=========")
-            print(rxBuffer)
-            msg+=rxBuffer
-            resposta,recebeu=recebeDatagrama(msg,1,1,n,int_list[3])
+                    tamanho=int_list[5]
+                    if int_list[0]!=1:
+                        rxBuffer, nRx = com1.getData(tamanho)
+                        time.sleep(.05)
+                        print("=========PAYLOAD=========")
+                        print(rxBuffer)
+                        msg+=rxBuffer
+
+                    rxBuffer, nRx = com1.getData(4)
+                    time.sleep(.05)
+                    print("=========EOP=========")
+                    print(rxBuffer)
+                    msg+=rxBuffer
+                    resposta,ocioso,recebeu,erro=recebeDatagrama(msg,1,1,n,int_list[3],False)
+
+            
+
+
+            if ocioso==False and int_list[0]==1:
+                print("+++++ENVIA+++++")
+                print(resposta)
+                com1.sendData(resposta)
+                ocioso=True
+                if n<=int_list[3]:
+                    timer1=time.time()
+                    timer2=time.time()
+                elif int_list[0]==3:
+                    print(n,int_list[3])
+                    print("SUCESSO")
+                    break
+
             if recebeu:
-                n+=1
-            print("+++++ENVIA+++++")
-            print(resposta)
-            com1.sendData(resposta)
-            time.sleep(.05)
+                time.sleep(30)
+                print("+++++ENVIA+++++")
+                print(resposta)
+                com1.sendData(resposta)
+                recebeu=False
+                if not erro:
+                    n+=1
+                if n<=int_list[3]:
+                    timer1=time.time()
+                    timer2=time.time()
+                elif int_list[0]==3:
+                    print(n,int_list[3])
+                    print("SUCESSO")
+                    break
+            
+            else:
+                time.sleep(1)     
+                if (time.time()-timer2)>20:   
+                    ocioso=True
+                    resposta=recebeDatagrama(msg,1,1,n,int_list[3],True)
+                    print("ENVIA TIPO 5")
+                    com1.disable()
+                    break
+                elif (time.time()-timer1)>2:
+                    com1.sendData(resposta) 
+                    timer1=time.time()
+                    
+            time.sleep(1)
 
 
         
