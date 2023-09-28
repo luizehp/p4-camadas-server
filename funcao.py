@@ -1,60 +1,16 @@
 from enlace import *
 import numpy as np
 import time
-
-""" class Server:
-
-    def __init__(self, porta: str, id:int) -> None:
-        self.porta= porta
-        self.id=id
-        self.qnt_payloads=0
-        self.n=0
-
-        """ """ try:
-            self.com = enlace(self.porta)
-            self.com.enable()
-            #self.recebeByteSacrificio()
-            #self.enviaByteSacrificio()
-        except Exception as erro:
-            print("ops! :-\\")
-            print(erro)
-            self.com.disable() """ """ """
-        
+from crc import Calculator, Crc16
+import crcmod
 
 
-
-""" def recebeDatagramaa( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int):
-    int_list = [int(byte) for byte in msg]
-    head = int_list[0:10]
-    payload = int_list[10:125]
-    eop = int_list[-4:]
-    recebeu=False
-    rsp=b""
-    if head[0] == 1 and head[1] == id and head[5]==id_arquivo and n==0:
-        print("*******Início handshake*******")
-        rsp=[0]*10
-        rsp[0]=2
-        resp=bytes(resp)
-        resp+=b'\xAA\xBB\xCC\xDD'
-        qnt_payloads=head[3]
-        recebeu=True
-    elif head[0]==3 :
-        if eop == [170,187,204,221]:
-            if head[3]==qnt_payloads:
-                if n==head[4]:
-                    if head[5]==len(payload):
-                        rsp=[0]*10
-                        rsp[0]=4
-                        rsp[7]=n
-                        resp=bytes(resp)
-                        resp+=b'\xAA\xBB\xCC\xDD'   
-                        recebeu=True              
-    return rsp,recebeu """
 
 
 def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads:int, timeout):
     resp=b""
-
+    #calculator = Calculator(Crc16.CCITT)
+    crc16 = crcmod.predefined.Crc('crc-16')
     if timeout:
         resp=[0]*10
         resp[0]=4
@@ -64,7 +20,8 @@ def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads
 
     int_list = [int(byte) for byte in msg]
     head = int_list[0:10]
-    #payload = int_list[10:125]
+    
+
     eop = int_list[-4:]
     ocioso=True
     recebeu=False
@@ -79,18 +36,34 @@ def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads
         qnt_payloads=head[3]
         ocioso=False
         return resp,ocioso,recebeu,erro
+    
+    payload = msg[10:]
+    payload = payload[:-4]
 
-    if (head[0]!=3) or (eop != [170,187,204,221]) or (head[3]!=qnt_payloads) or (n!=head[4]):
+    """ crc16.update(bytes(payload))
+    crc_value = crc16.crcValue
+    print("CRC",crc_value)
+    byte_array = int.to_bytes(crc_value, 2, byteorder='big') """
+    #print("PAYLOAD=",payload)
+    byte_array= __criaCRC (payload)
+    int_crc = [int(byte) for byte in byte_array]
+    #print(byte_array, int_crc, head[8],head[9])
+
+    if (head[0]!=3) or (eop != [170,187,204,221]) or (head[3]!=qnt_payloads) or (n!=head[4]) or (int_crc[0]!=head[8]) or (int_crc[1]!=head[9]):
         print("PACOTE ERRO")
         resp=[0]*10
         resp[0]=6
         resp[6]=n
         resp=bytes(resp)
         resp+=b'\xAA\xBB\xCC\xDD'   
-        recebeu=True 
+        #recebeu=True 
         erro=True
     else:
         print("PACOTE OK")
+        """ print("CALCULO",bytes(calculator.checksum(bytes(payload))))
+        expected=bytes([head[8],head[9]])
+        #if expected == calculator.checksum(bytes(payload)):
+            #print("CRC OK") """
         resp=[0]*10
         resp[0]=4
         resp[7]=n
@@ -100,40 +73,14 @@ def recebeDatagrama( msg: bytearray, id_arquivo:int, id:int, n:int, qnt_payloads
     
     return resp,ocioso,recebeu,erro
 
-
-            
-       
-
-    """ def enviaByteSacrificio(self) -> None:
-        print('Enviando byte de sacrificio')
-        self.com.sendData(np.asarray(b'x00'))    #enviar byte de lixo
-        time.sleep(.05)
-        self.com.rx.clearBuffer()
-
-    
-    def recebeByteSacrificio(self) -> None:
-        print("Esperando byte de sacrifício")
-        rxBuffer, nRx = self.com.getData(1)
-        print("RECEBEU")
-        time.sleep(.05)
-        self.com.rx.clearBuffer() """
-
-    """ def clearbuffer(self):
-        self.com.rx.clearBuffer()
-    def sendata(self,array):
-        self.com.sendData(array)
-    def getdata(self,tamanho):
-        rxBuffer, nRx=self.com.getData(tamanho)
-        return rxBuffer, nRx """
-
-   # def enviaDatagrama(self, id_arquivo: int):
-        
-    """ def getFeedback(self, n: int):
-        rxBuffer, nRx, check = self.com.getData_teste(n)
-        return rxBuffer, nRx, check """
             
 
-
+def __criaCRC(payload: bytearray):
+        crc16 = crcmod.predefined.Crc('crc-16') 
+        crc16.update(bytes(payload))
+        crc_value = crc16.crcValue
+        byte_array = int.to_bytes(crc_value, 2, byteorder='big')
+        return byte_array
 #   h0 – Tipo de mensagem.
 #   h1 – Se tipo for 1: número do servidor. Qualquer outro tipo: livre
 #   h2 – Livre.

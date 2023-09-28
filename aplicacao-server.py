@@ -54,6 +54,7 @@ def main():
         timer1=time.time()
         timer2=time.time()
         recebeu=False
+        arq=b""
         while True:
             msg=b""
             print("esperando pacote")
@@ -76,6 +77,7 @@ def main():
                         print("=========PAYLOAD=========")
                         print(rxBuffer)
                         msg+=rxBuffer
+                        arq+=rxBuffer
 
                     rxBuffer, nRx = com1.getData(4)
                     time.sleep(.05)
@@ -85,7 +87,7 @@ def main():
                     resposta,ocioso,recebeu,erro=recebeDatagrama(msg,1,1,n,int_list[3],False)
 
             
-
+            
 
             if ocioso==False and int_list[0]==1:
                 print("+++++ENVIA+++++")
@@ -100,14 +102,19 @@ def main():
                     print("SUCESSO")
                     break
 
+            #print("TEMPO",time.time()-timer2, recebeu )
+            print(recebeu)
             if recebeu:
-                time.sleep(30)
+                #print("SLEEP")
+                #time.sleep(30)
                 print("+++++ENVIA+++++")
                 print(resposta)
                 com1.sendData(resposta)
+                #com1.rx.clearBuffer()
                 recebeu=False
                 if not erro:
                     n+=1
+                erro=False
                 if n<=int_list[3]:
                     timer1=time.time()
                     timer2=time.time()
@@ -115,7 +122,6 @@ def main():
                     print(n,int_list[3])
                     print("SUCESSO")
                     break
-            
             else:
                 time.sleep(1)     
                 if (time.time()-timer2)>20:   
@@ -125,14 +131,16 @@ def main():
                     com1.disable()
                     break
                 elif (time.time()-timer1)>2:
+                    print("TIMER1")
                     com1.sendData(resposta) 
                     timer1=time.time()
                     
             time.sleep(1)
 
 
-        
-
+        print()
+        print("______ARQUIVO_______")
+        print(arq)
 
         # Encerra comunicação
         print("-------------------------")
